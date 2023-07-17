@@ -862,7 +862,7 @@ int main() {
   simple_printf("Pointer: (void *)&x = %p\n", (void *)&x);
 
   simple_printf("\nsimple_snprintf with various size buffers:\n");
-  for (int i = 0; i <= 50; i += 5) {
+  for (int i = 50; i >= 0; i -= 5) {
     char buf[50];
     x = simple_snprintf(buf, i, "This is a test: %.16llX%.16llX", 
                         0xDEADBEEFDEADBEEFULL, 0xABCDABCDABCDABCDULL);
