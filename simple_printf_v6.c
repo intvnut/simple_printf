@@ -344,7 +344,7 @@ static void printf_core(struct printer *p, const char *fmt, va_list args) {
       pfmt = NULL;
     }
 
-    /* It's (potentially) a conversion. Let's look. */
+    /* It's (potentially) a conversion. Let's take a look. */
     const char *initial = fmt;  /* Start of conversion specifier.            */
     int  conv = *fmt++;         /* Fetch first character of conversion spec. */
     bool leading_zero = false;  /* Leading-zero flag.                        */
