@@ -308,12 +308,12 @@ static void store_character_count(va_list *args, int size, size_t total) {
  *      -- Max integer precision is limited by INT_BUF_MAX.
  *  -- Printing "%" with "%%".
  *  -- Reporting length of printed string with "n".
- *
- * Not supported:
- *  -- Floating point.
  *  -- Returning length of printed string.
  *  -- Printing to a stream other than stdout.
  *  -- Printing to a buffer.
+ *
+ * Not supported:
+ *  -- Floating point.
  *
  * I guess it's no longer so simple...
  */
