@@ -233,60 +233,16 @@ static uintmax_t get_unsigned_integer(va_list *args, int size) {
 static void store_character_count(va_list *args, int size, size_t total) {
   /* The size modifier determines the data type of the pointer argument. */
   switch (size) {
-    case kSizeChar: {
-      signed char *p = va_arg(*args, signed char *);
-      *p = (signed char)total;
-      break;
-    }
-
-    case kSizeShort: {
-      short *p = va_arg(*args, short *);
-      *p = (short)total;
-      break;
-    }
-
-    case kSizeDefault: {
-      int *p = va_arg(*args, int *);
-      *p = (int)total;
-      break;
-    }
-
-    case kSizeLong: {
-      long *p = va_arg(*args, long *);
-      *p = (long)total;
-      break;
-    }
-
-    case kSizeLongLong: {
-      long long *p = va_arg(*args, long long *);
-      *p = (long long)total;
-      break;
-    }
-
-    case kSizeIntMaxT: {
-      intmax_t *p = va_arg(*args, intmax_t *);  /* Signed type! */
-      *p = (intmax_t)total;
-      break;
-    }
-
-    case kSizeSizeT: {
-      ssize_type *p = va_arg(*args, ssize_type *);  /* Signed type! */
-      *p = (ssize_type)total;
-      break;
-    }
-
-    case kSizePtrDiffT: {
-      ptrdiff_t *p = va_arg(*args, ptrdiff_t *);
-      *p = (ptrdiff_t)total;
-      break;
-    }
-
-    default: {
-      /* Unknown.  Guess int. */
-      int *p = va_arg(*args, int *);
-      *p = (int)total;
-      break;
-    }
+    case kSizeChar:     { *va_arg(*args, signed char *) = total; break; }
+    case kSizeShort:    { *va_arg(*args, short *)       = total; break; }
+    case kSizeDefault:  { *va_arg(*args, int *)         = total; break; }
+    case kSizeLong:     { *va_arg(*args, long *)        = total; break; }
+    case kSizeLongLong: { *va_arg(*args, long long *)   = total; break; }
+    case kSizeIntMaxT:  { *va_arg(*args, intmax_t *)    = total; break; }
+    case kSizeSizeT:    { *va_arg(*args, size_t *)      = total; break; }
+    case kSizePtrDiffT: { *va_arg(*args, ptrdiff_t *)   = total; break; }
+    /* Unknown:  Guess int. */
+    default:            { *va_arg(*args, int *)         = total; break; }
   }
 }
 
