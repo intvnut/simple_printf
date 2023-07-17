@@ -19,7 +19,7 @@ void print_unsigned_int(unsigned u) {
   }
 }
 
-/* Prints a unsigned integer to stdout. */
+/* Prints a signed integer to stdout. */
 void print_signed_int(int i) {
   unsigned u = i;
 
@@ -37,7 +37,7 @@ void print_signed_int(int i) {
 }
 
 
-/* Simplified printf that only understands %s, %d, %i, and %u. */
+/* Simplified printf that only understands %s, %d, %i, %u, and %%. */
 void simple_printf(const char *fmt, ...) {
   va_list args;
   va_start(args, fmt);
@@ -49,7 +49,7 @@ void simple_printf(const char *fmt, ...) {
       continue;
     }
 
-    /* It's (potentially) a conversion. Let's look. */
+    /* It's (potentially) a conversion. Let's take a look. */
     int conv = *fmt++;
 
     switch (conv) {

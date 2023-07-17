@@ -32,7 +32,7 @@ void print_int(int d) {
 }
 
 
-/* Simplified printf that only understands %s and %d. */
+/* Simplified printf that only understands %s, %d, and %%. */
 void simple_printf(const char *fmt, ...) {
   va_list args;
   va_start(args, fmt);
@@ -44,7 +44,7 @@ void simple_printf(const char *fmt, ...) {
       continue;
     }
 
-    /* It's (potentially) a conversion. Let's look. */
+    /* It's (potentially) a conversion. Let's take a look. */
     int conv = *fmt++;
 
     switch (conv) {
@@ -56,7 +56,7 @@ void simple_printf(const char *fmt, ...) {
       }
 
       case 'd': {
-        /* %d is an integer. */
+        /* %d is a signed integer. */
         int d = va_arg(args, int);
         print_int(d);
         break;

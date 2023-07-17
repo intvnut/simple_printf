@@ -35,13 +35,14 @@ void print_integer(unsigned long long value, bool is_signed, bool is_caps,
   fputs(buf + idx, stdout);
 }
 
-/* 
+/*
  * Simplified printf that understands:
- *  -- Strings: %s  
+ *  -- Strings: %s
  *  -- Signed decimal integers: %d, %ld, %lld, %i, %li, %lli
  *  -- Unsigned decimal integers: %u, %lu, %llu
  *  -- Lowercase hexadecimal integers: %x, %lx, %llx
  *  -- Uppercase hexadecimal integers: %X, %lX, %llX
+ *  -- Printing % with %%.
  */
 void simple_printf(const char *fmt, ...) {
   va_list args;
@@ -54,7 +55,7 @@ void simple_printf(const char *fmt, ...) {
       continue;
     }
 
-    /* It's (potentially) a conversion. Let's look. */
+    /* It's (potentially) a conversion. Let's take a look. */
     const char *initial = fmt;
     int conv = *fmt++;
     int longlong = 0;

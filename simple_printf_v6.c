@@ -162,7 +162,7 @@ static int conv_integer(
     buf[--idx] = is_caps ? 'X' : 'x';
     buf[--idx] = '0';
   }
-    
+
   /*
    * If we're negative add a negative sign.  Otherwise, if this is a signed
    * conversion, add a '+' or ' ' if directed.
@@ -182,7 +182,7 @@ static void print_string(
   if (!left_justify && len < width) {
     p->fill(p, ' ', width - len);
   }
-  
+
   p->copy(p, s, len);
 
   if (left_justify && len < width) {
@@ -287,7 +287,7 @@ static void store_character_count(va_list *args, int size, size_t total) {
   }
 }
 
-/* 
+/*
  * Implements simplified printf that understands:
  *  -- Strings: "s"
  *  -- Characters: "c"
@@ -314,8 +314,8 @@ static void store_character_count(va_list *args, int size, size_t total) {
  *
  * Not supported:
  *  -- Floating point.
- *  -- Wide characters ("%lc")
- *  -- Wide character strings ("%ls")
+ *  -- Wide characters ("%lc").
+ *  -- Wide character strings ("%ls").
  *
  * I guess it's no longer so simple...
  */
@@ -423,7 +423,7 @@ static void printf_core(struct printer *p, const char *fmt, va_list args) {
     switch (conv) {
       case 'h': {
         size = kSizeShort;  /* "h" is short. */
-        
+
         if (*fmt == 'h') {  /* "hh" is char. */
             size = kSizeChar;
             fmt++;
@@ -462,7 +462,7 @@ static void printf_core(struct printer *p, const char *fmt, va_list args) {
 
         p->putc(p, (unsigned char)va_arg(args, int));
         break;
-      } 
+      }
 
       case 's': {
         /* For now, we don't support %ls. */
@@ -487,15 +487,19 @@ static void printf_core(struct printer *p, const char *fmt, va_list args) {
       case 'o':     /* %o is an unsigned octal integer. */
         base = 8;
         /* FALLTHROUGH_INTENDED */
+
       case 'X':     /* %X is an unsigned hexadecimal integer in caps. */
         is_caps = true;
         /* FALLTHROUGH_INTENDED */
+
       case 'x':     /* %x is an unsigned hexadecimal integer in lowercase. */
         base = base == 10 ? 16 : base;  /* Hex unless fallthrough from octal. */
         /* FALLTHROUGH_INTENDED */
+
       case 'u':     /* %u is an unsigned decimal integer. */
         is_signed = false;
         /* FALLTHROUGH_INTENDED */
+
       case 'i':     /* %d and %i are signed decimal integers. */
       case 'd': {
         unsigned long long val = is_signed ? get_signed_integer(&args, size)
@@ -513,7 +517,7 @@ static void printf_core(struct printer *p, const char *fmt, va_list args) {
             soft_prec = true;
           } else {
             prec = 1;
-          } 
+          }
         }
 
         int idx = conv_integer(val, sign, is_signed, is_caps, is_alt, prec,
@@ -611,7 +615,7 @@ int simple_printf(const char *fmt, ...) {
 }
 
 
-/* Copies a string to a buffer */
+/* Copies a string to a buffer. */
 static void printer_buf_copy(struct printer *p, const char *s, size_t len) {
   if (p->total >= p->max) {
     p->total += len;
@@ -626,7 +630,7 @@ static void printer_buf_copy(struct printer *p, const char *s, size_t len) {
   memcpy(target, s, len);
 }
 
-/* Fills a block of output with a character. */
+/* Writes a block of fill characters to a buffer. */
 static void printer_buf_fill(struct printer *p, char c, size_t len) {
   if (p->total >= p->max) {
     p->total += len;
@@ -641,7 +645,7 @@ static void printer_buf_fill(struct printer *p, char c, size_t len) {
   memset(target, c, len);
 }
 
-/* Copies a character to a buffer */
+/* Copies a character to a buffer. */
 static void printer_buf_putc(struct printer *p, char c) {
   if (p->total >= p->max) {
     p->total++;
@@ -801,7 +805,7 @@ int main() {
   simple_printf("Octal    %%#jo: %#jo\n", UINTMAX_MAX);
   simple_printf("Hex      %%#jx: %#jx\n", UINTMAX_MAX);
   simple_printf("Hex      %%#jX: %#jX\n", UINTMAX_MAX);
- 
+
   simple_printf("\nField width & precision:\n");
   simple_printf("%%s:    [%s]    %%-10s:    [%-10s] %%10s:    [%10s]\n",
                 "Hello", "Hello", "Hello");
@@ -866,7 +870,7 @@ int main() {
   simple_printf("\nsimple_snprintf with various size buffers:\n");
   for (int i = 50; i >= 0; i -= 5) {
     char buf[50];
-    x = simple_snprintf(buf, i, "This is a test: %.16llX%.16llX", 
+    x = simple_snprintf(buf, i, "This is a test: %.16llX%.16llX",
                         0xDEADBEEFDEADBEEFULL, 0xABCDABCDABCDABCDULL);
     simple_printf("x=%d, buf=[%s]\n", x, buf);
   }

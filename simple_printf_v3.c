@@ -21,7 +21,7 @@ void print_unsigned_decimal_int(unsigned u) {
   }
 }
 
-/* Prints an signed decimal integer to stdout. */
+/* Prints a signed decimal integer to stdout. */
 void print_signed_decimal_int(int i) {
   unsigned u = i;
 
@@ -39,7 +39,7 @@ void print_signed_decimal_int(int i) {
 }
 
 
-/* Prints an hexadecimal integer to stdout. */
+/* Prints a hexadecimal integer to stdout. */
 void print_hexadecimal_int(unsigned u, bool caps) {
   /* Inefficient, but portable. */
   unsigned pow16 = 1;
@@ -59,7 +59,7 @@ void print_hexadecimal_int(unsigned u, bool caps) {
   }
 }
 
-/* Simplified printf that only understands %s, %d, %i, and %u. */
+/* Simplified printf that only understands %s, %d, %i, %u, %x, %X and %%. */
 void simple_printf(const char *fmt, ...) {
   va_list args;
   va_start(args, fmt);
@@ -71,7 +71,7 @@ void simple_printf(const char *fmt, ...) {
       continue;
     }
 
-    /* It's (potentially) a conversion. Let's look. */
+    /* It's (potentially) a conversion. Let's take a look. */
     int conv = *fmt++;
 
     switch (conv) {

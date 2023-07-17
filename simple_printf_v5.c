@@ -120,7 +120,7 @@ static int conv_integer(
     buf[--idx] = is_caps ? 'X' : 'x';
     buf[--idx] = '0';
   }
-    
+
   /*
    * If we're negative add a negative sign.  Otherwise, if this is a signed
    * conversion, add a '+' or ' ' if directed.
@@ -141,7 +141,7 @@ static void print_string(const char *s, int len, int width, bool left_justify) {
       fputc(' ', stdout);
     }
   }
-  
+
   fwrite(s, 1, len, stdout);
 
   if (left_justify && len < width) {
@@ -215,7 +215,7 @@ static unsigned long long get_unsigned_integer(va_list *args, int size) {
   return va_arg(*args, unsigned);
 }
 
-/* 
+/*
  * Implements simplified printf that understands:
  *  -- Strings: "s"
  *  -- Characters: "c"
@@ -242,8 +242,8 @@ static unsigned long long get_unsigned_integer(va_list *args, int size) {
  *  -- Printing to a stream other than stdout.
  *  -- Printing to a buffer.
  *  -- Converting pointers with "p".
- *  -- Wide characters ("%lc")
- *  -- Wide character strings ("%ls")
+ *  -- Wide characters ("%lc").
+ *  -- Wide character strings ("%ls").
  *
  * I guess it's no longer so simple...
  */
@@ -341,7 +341,7 @@ void simple_printf(const char *fmt, ...) {
     switch (conv) {
       case 'h': {
         size = kSizeShort;  /* "h" is short. */
-        
+
         if (*fmt == 'h') {  /* "hh" is char. */
             size = kSizeChar;
             fmt++;
@@ -380,7 +380,7 @@ void simple_printf(const char *fmt, ...) {
 
         putchar((unsigned char)va_arg(args, int));
         break;
-      } 
+      }
 
       case 's': {
         /* For now, we don't support %ls. */
@@ -404,15 +404,19 @@ void simple_printf(const char *fmt, ...) {
       case 'o':     /* %o is an unsigned octal integer. */
         base = 8;
         /* FALLTHROUGH_INTENDED */
+
       case 'X':     /* %X is an unsigned hexadecimal integer in caps. */
         is_caps = true;
         /* FALLTHROUGH_INTENDED */
+
       case 'x':     /* %x is an unsigned hexadecimal integer in lowercase. */
         base = base == 10 ? 16 : base;  /* Hex unless fallthrough from octal. */
         /* FALLTHROUGH_INTENDED */
+
       case 'u':     /* %u is an unsigned decimal integer. */
         is_signed = false;
         /* FALLTHROUGH_INTENDED */
+
       case 'i':     /* %d and %i are signed decimal integers. */
       case 'd': {
         unsigned long long val = is_signed ? get_signed_integer(&args, size)
@@ -430,7 +434,7 @@ void simple_printf(const char *fmt, ...) {
             soft_prec = true;
           } else {
             prec = 1;
-          } 
+          }
         }
 
         int idx = conv_integer(val, sign, is_signed, is_caps, is_alt, prec,
@@ -585,7 +589,7 @@ int main() {
   simple_printf("Octal    %%#jo: %#jo\n", UINTMAX_MAX);
   simple_printf("Hex      %%#jx: %#jx\n", UINTMAX_MAX);
   simple_printf("Hex      %%#jX: %#jX\n", UINTMAX_MAX);
- 
+
   simple_printf("\nField width & precision:\n");
   simple_printf("%%s:    [%s]    %%-10s:    [%-10s] %%10s:    [%10s]\n",
                 "Hello", "Hello", "Hello");
