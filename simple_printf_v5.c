@@ -6,6 +6,11 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+/*
+ * Copyright 2023, J. Zbiciak <joe.zbiciak@leftturnonly.info>
+ * Author:  Joe Zbiciak <joe.zbiciak@leftturnonly.info>
+ * SPDX-License-Identifier:  CC-BY-SA-4.0
+ */
 
 /* Operand sizes: */   /* Mod   diouxX conversions                  cs convs */
 enum {                 /* ----  ----------------------------------  -------- */

@@ -1,5 +1,10 @@
 #include <stdarg.h>
 #include <stdio.h>
+/*
+ * Copyright 2023, J. Zbiciak <joe.zbiciak@leftturnonly.info>
+ * Author:  Joe Zbiciak <joe.zbiciak@leftturnonly.info>
+ * SPDX-License-Identifier:  CC-BY-SA-4.0
+ */
 
 /* Prints a signed integer to stdout. */
 void print_int(int d) {

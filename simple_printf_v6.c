@@ -6,6 +6,11 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+/*
+ * Copyright 2023, J. Zbiciak <joe.zbiciak@leftturnonly.info>
+ * Author:  Joe Zbiciak <joe.zbiciak@leftturnonly.info>
+ * SPDX-License-Identifier:  CC-BY-SA-4.0
+ */
 
 /*
  * Some conversions need the "signed integer type corresponding to size_t."

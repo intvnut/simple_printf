@@ -1,6 +1,11 @@
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
+/*
+ * Copyright 2023, J. Zbiciak <joe.zbiciak@leftturnonly.info>
+ * Author:  Joe Zbiciak <joe.zbiciak@leftturnonly.info>
+ * SPDX-License-Identifier:  CC-BY-SA-4.0
+ */
 
 /* Prints an unsigned decimal integer to stdout. */
 void print_unsigned_decimal_int(unsigned u) {
