@@ -242,6 +242,8 @@ static unsigned long long get_unsigned_integer(va_list *args, int size) {
  *  -- Printing to a stream other than stdout.
  *  -- Printing to a buffer.
  *  -- Converting pointers with "p".
+ *  -- Wide characters ("%lc")
+ *  -- Wide character strings ("%ls")
  *
  * I guess it's no longer so simple...
  */

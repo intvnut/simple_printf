@@ -314,6 +314,8 @@ static void store_character_count(va_list *args, int size, size_t total) {
  *
  * Not supported:
  *  -- Floating point.
+ *  -- Wide characters ("%lc")
+ *  -- Wide character strings ("%ls")
  *
  * I guess it's no longer so simple...
  */
