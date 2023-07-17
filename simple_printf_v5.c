@@ -376,7 +376,8 @@ void simple_printf(const char *fmt, ...) {
           break;
         }
 
-        putchar((unsigned char)va_arg(args, int));
+        buf[0] = va_arg(args, int);
+        print_string(buf, 1, width, left_justify);
         break;
       }
 
@@ -589,6 +590,8 @@ int main() {
   simple_printf("Hex      %%#jX: %#jX\n", UINTMAX_MAX);
 
   simple_printf("\nField width & precision:\n");
+  simple_printf("%%c:    [%c]        %%-10c:    [%-10c] %%10c:    [%10c]\n",
+                '*', '*', '*');
   simple_printf("%%s:    [%s]    %%-10s:    [%-10s] %%10s:    [%10s]\n",
                 "Hello", "Hello", "Hello");
   simple_printf("%%.2s:  [%.2s]       %%-10.2s:  [%-10.2s] %%10.2s:  "

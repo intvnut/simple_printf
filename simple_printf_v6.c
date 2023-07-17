@@ -458,7 +458,8 @@ static void printf_core(struct printer *p, const char *fmt, va_list args) {
           break;
         }
 
-        p->putc(p, (unsigned char)va_arg(args, int));
+        buf[0] = va_arg(args, int);
+        print_string(p, buf, 1, width, left_justify);
         break;
       }
 
@@ -805,6 +806,8 @@ int main() {
   simple_printf("Hex      %%#jX: %#jX\n", UINTMAX_MAX);
 
   simple_printf("\nField width & precision:\n");
+  simple_printf("%%c:    [%c]        %%-10c:    [%-10c] %%10c:    [%10c]\n",
+                '*', '*', '*');
   simple_printf("%%s:    [%s]    %%-10s:    [%-10s] %%10s:    [%10s]\n",
                 "Hello", "Hello", "Hello");
   simple_printf("%%.2s:  [%.2s]       %%-10.2s:  [%-10.2s] %%10.2s:  "
