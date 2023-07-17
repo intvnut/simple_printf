@@ -7,6 +7,35 @@
 #include <stdio.h>
 #include <string.h>
 
+/*
+ * Some conversions need the "signed integer type corresponding to size_t."
+ * The language spec doesn't name the type, so try to determine it.
+ */
+#if ULLONG_MAX == SIZE_MAX
+typedef long long ssize_type;
+#elif ULONG_MAX == SIZE_MAX
+typedef long ssize_type;
+#elif UINT_MAX == SIZE_MAX
+typedef int ssize_type;
+#else
+#error Could not determine signed type corresponding to size_t.
+#endif
+
+/*
+ * Some conversions need the "unsigned integer type corresponding to ptrdiff_t."
+ * The language spec doesn't name the type, so try to determine it.
+ */
+#if LLONG_MAX == PTRDIFF_MAX
+typedef unsigned long long uptrdiff_type;
+#elif LONG_MAX == PTRDIFF_MAX
+typedef unsigned long uptrdiff_type;
+#elif INT_MAX == PTRDIFF_MAX
+typedef unsigned uptrdiff_type;
+#else
+#error Could not determine unsigned type corresponding to ptrdiff_t.
+#endif
+
+
 /* Operand sizes: */   /* Mod   diouxX conversions                  cs convs */
 enum {                 /* ----  ----------------------------------  -------- */
   kSizeChar,           /* hh    signed char, unsigned char                   */
@@ -14,7 +43,7 @@ enum {                 /* ----  ----------------------------------  -------- */
   kSizeDefault,        /* none  int, unsigned int, double,          char     */
   kSizeLong,           /*  l    long, unsigned long,                wchar_t  */
   kSizeLongLong,       /* ll    long long int, unsigned long long            */
-  kSizeMax,            /*  j    intmax_t                                     */
+  kSizeIntMaxT,        /*  j    intmax_t                                     */
   kSizeSizeT,          /*  z    size_t                                       */
   kSizePtrDiffT        /*  t    ptrdiff_t                                    */
 };
@@ -171,22 +200,9 @@ static unsigned long long get_signed_integer(va_list *args, int size) {
     case kSizeDefault:  { return va_arg(*args, int);               }
     case kSizeLong:     { return va_arg(*args, long);              }
     case kSizeLongLong: { return va_arg(*args, long long);         }
-    case kSizeMax:      { return va_arg(*args, intmax_t);          }
+    case kSizeIntMaxT:  { return va_arg(*args, intmax_t);          }
+    case kSizeSizeT:    { return va_arg(*args, ssize_type);        }
     case kSizePtrDiffT: { return va_arg(*args, ptrdiff_t);         }
-    case kSizeSizeT:    {
-      /*
-       * C doesn't give a name to the signed type that corresponds to
-       * size_t, but that's what we need to extract here.  Guess among
-       * long long, long, and int based on size.
-       */
-      if (sizeof(size_t) == sizeof(unsigned long long)) {
-        return va_arg(*args, long long);
-      } else if (sizeof(size_t) == sizeof(unsigned long)) {
-        return va_arg(*args, long);
-      } else {
-        return va_arg(*args, int);
-      }
-    }
   }
 
   /* Unknown size.  Fall back to int. */
@@ -201,28 +217,74 @@ static unsigned long long get_unsigned_integer(va_list *args, int size) {
     case kSizeDefault:  { return va_arg(*args, unsigned int);       }
     case kSizeLong:     { return va_arg(*args, unsigned long);      }
     case kSizeLongLong: { return va_arg(*args, unsigned long long); }
-    case kSizeMax:      { return va_arg(*args, uintmax_t);          }
+    case kSizeIntMaxT:  { return va_arg(*args, uintmax_t);          }
     case kSizeSizeT:    { return va_arg(*args, size_t);             }
-    case kSizePtrDiffT: {
-      /*
-       * C doesn't give a name to the unsigned type that corresponds to
-       * ptrdiff_t, but that's what we need to extract here.  Guess
-       * among unsigned long long, unsigned long, and unsigned based on
-       * size.
-       */
-      if (sizeof(ptrdiff_t) == sizeof(long long)) {
-        return va_arg(*args, unsigned long long);
-      } else if (sizeof(size_t) == sizeof(long)) {
-        return va_arg(*args, unsigned long);
-      } else {
-        return va_arg(*args, unsigned);
-      }
-      break;
-    }
+    case kSizePtrDiffT: { return va_arg(*args, uptrdiff_type);      }
   }
 
   /* Unknown size.  Fall back to unsigned. */
   return va_arg(*args, unsigned);
+}
+
+/* Stores the current character count to the appropriate sort of pointer. */
+static void store_character_count(va_list *args, int size, size_t total) {
+  /* The size modifier determines the data type of the pointer argument. */
+  switch (size) {
+    case kSizeChar: {
+      signed char *p = va_arg(*args, signed char *);
+      *p = (signed char)total;
+      break;
+    }
+
+    case kSizeShort: {
+      short *p = va_arg(*args, short *);
+      *p = (short)total;
+      break;
+    }
+
+    case kSizeDefault: {
+      int *p = va_arg(*args, int *);
+      *p = (int)total;
+      break;
+    }
+
+    case kSizeLong: {
+      long *p = va_arg(*args, long *);
+      *p = (long)total;
+      break;
+    }
+
+    case kSizeLongLong: {
+      long long *p = va_arg(*args, long long *);
+      *p = (long long)total;
+      break;
+    }
+
+    case kSizeIntMaxT: {
+      intmax_t *p = va_arg(*args, intmax_t *);  /* Signed type! */
+      *p = (intmax_t)total;
+      break;
+    }
+
+    case kSizeSizeT: {
+      ssize_type *p = va_arg(*args, ssize_type *);  /* Signed type! */
+      *p = (ssize_type)total;
+      break;
+    }
+
+    case kSizePtrDiffT: {
+      ptrdiff_t *p = va_arg(*args, ptrdiff_t *);
+      *p = (ptrdiff_t)total;
+      break;
+    }
+
+    default: {
+      /* Unknown.  Guess int. */
+      int *p = va_arg(*args, int *);
+      *p = (int)total;
+      break;
+    }
+  }
 }
 
 /* 
@@ -245,11 +307,11 @@ static unsigned long long get_unsigned_integer(va_list *args, int size) {
  *      -- Supports dynamic values via "*".
  *      -- Max integer precision is limited by INT_BUF_MAX.
  *  -- Printing "%" with "%%".
+ *  -- Reporting length of printed string with "n".
  *
  * Not supported:
  *  -- Floating point.
  *  -- Returning length of printed string.
- *  -- Reporting length of printed string with "n".
  *  -- Printing to a stream other than stdout.
  *  -- Printing to a buffer.
  *
@@ -381,7 +443,7 @@ static void printf_core(struct printer *p, const char *fmt, va_list args) {
         break;
       }
 
-      case 'j': { size = kSizeMax;      conv = *fmt++; break; }
+      case 'j': { size = kSizeIntMaxT;  conv = *fmt++; break; }
       case 'z': { size = kSizeSizeT;    conv = *fmt++; break; }
       case 't': { size = kSizePtrDiffT; conv = *fmt++; break; }
     }
@@ -469,6 +531,11 @@ static void printf_core(struct printer *p, const char *fmt, va_list args) {
 
         int len = INT_BUF_SIZE - idx - 1;
         print_string(p, buf + idx, len, width, left_justify);
+        break;
+      }
+
+      case 'n': {
+        store_character_count(&args, size, p->total);
         break;
       }
 
@@ -801,4 +868,25 @@ int main() {
                         0xDEADBEEFDEADBEEFULL, 0xABCDABCDABCDABCDULL);
     simple_printf("x=%d, buf=[%s]\n", x, buf);
   }
+
+  simple_printf("\nTesting %%n with different widths.\n");
+  char       hh0 = -99,   hh1 = -99;
+  short      h0  = -9999, h1  = -9999;
+  int        i0  = -9999, i1  = -9999;
+  long       l0  = -9999, l1  = -9999;
+  long long  ll0 = -9999, ll1 = -9999;
+  intmax_t   j0  = -9999, j1  = -9999;
+  ssize_type z0  = -9999, z1  = -9999;
+  ptrdiff_t  t0  = -9999, t1  = -9999;
+
+  simple_printf(
+      "ABCDE%hhn%hn%n%ln%lln%jn%zn%tnFGHIJ%hhn%hn%n%ln%lln%jn%zn%tn\n",
+      &hh0, &h0, &i0, &l0, &ll0, &j0, &z0, &t0,  /* all should be 5 */
+      &hh1, &h1, &i1, &l1, &ll1, &j1, &z1, &t1); /* all should be 10 */
+  simple_printf(
+      "hh0=%d, h0=%d, i0=%d, l0=%ld, ll0=%lld, j0=%jd, z0=%zd, t0=%td\n",
+      hh0, h0, i0, l0, ll0, j0, z0, t0);
+  simple_printf(
+      "hh1=%d, h1=%d, i1=%d, l1=%ld, ll1=%lld, j1=%jd, z1=%zd, t1=%td\n",
+      hh1, h1, i1, l1, ll1, j1, z1, t1);
 }
