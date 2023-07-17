@@ -460,7 +460,7 @@ static void printf_core(struct printer *p, const char *fmt, va_list args) {
           break;
         }
 
-        putchar((unsigned char)va_arg(args, int));
+        p->putc(p, (unsigned char)va_arg(args, int));
         break;
       } 
 
