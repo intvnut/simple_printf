@@ -93,7 +93,7 @@ static const char *const hex_digits[2] = {
  * Returns the index of the first character.
  */
 static int conv_integer(
-    unsigned long long value, int sign, bool is_signed, bool is_caps,
+    uintmax_t value, int sign, bool is_signed, bool is_caps,
     bool is_alt, int prec, bool soft_prec, unsigned base, char *buf) {
   bool is_negative = false;
   int idx = INT_BUF_SIZE;
@@ -196,7 +196,7 @@ static void print_string(
 }
 
 /* Gets a signed argument of the specified size. */
-static unsigned long long get_signed_integer(va_list *args, int size) {
+static uintmax_t get_signed_integer(va_list *args, int size) {
   switch (size) {
     case kSizeChar:     { return (signed char )va_arg(*args, int); }
     case kSizeShort:    { return (signed short)va_arg(*args, int); }
@@ -213,7 +213,7 @@ static unsigned long long get_signed_integer(va_list *args, int size) {
 }
 
 /* Gets an unsigned argument of the specified size. */
-static unsigned long long get_unsigned_integer(va_list *args, int size) {
+static uintmax_t get_unsigned_integer(va_list *args, int size) {
   switch (size) {
     case kSizeChar:     { return (unsigned char)va_arg(*args, int); }
     case kSizeShort:    { return (unsigned short)va_arg(*args,int); }
@@ -506,8 +506,8 @@ static void printf_core(struct printer *p, const char *fmt, va_list args) {
 
       case 'i':     /* %d and %i are signed decimal integers. */
       case 'd': {
-        unsigned long long val = is_signed ? get_signed_integer(&args, size)
-                                           : get_unsigned_integer(&args, size);
+        uintmax_t val = is_signed ? get_signed_integer(&args, size)
+                                  : get_unsigned_integer(&args, size);
         bool soft_prec = false;
 
         if (default_prec) {
@@ -534,7 +534,7 @@ static void printf_core(struct printer *p, const char *fmt, va_list args) {
       case 'p': {
         /* Print pointers like %#x with an appropriate length modifier. */
         void *ptr = va_arg(args, void *);
-        unsigned long long val = (uintptr_t)ptr;
+        uintmax_t val = (uintptr_t)ptr;
 
         int idx = conv_integer(val, false, false, false, true, 1, false,
                                16, buf);
