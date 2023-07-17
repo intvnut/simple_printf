@@ -192,8 +192,6 @@ static void print_string(
 
 /* Gets a signed argument of the specified size. */
 static unsigned long long get_signed_integer(va_list *args, int size) {
-  unsigned long long v;
-
   switch (size) {
     case kSizeChar:     { return (signed char )va_arg(*args, int); }
     case kSizeShort:    { return (signed short)va_arg(*args, int); }
