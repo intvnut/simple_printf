@@ -2,6 +2,11 @@
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
+/*
+ * Copyright 2023, J. Zbiciak <joe.zbiciak@leftturnonly.info>
+ * Author:  Joe Zbiciak <joe.zbiciak@leftturnonly.info>
+ * SPDX-License-Identifier:  CC-BY-SA-4.0
+ */
 
 /* Assume MSB is sign bit. */
 #define SIGN_BIT (ULLONG_MAX - ULLONG_MAX / 2)
@@ -130,7 +135,7 @@ void simple_printf(const char *fmt, ...) {
       default: {
         /* Not a valid conversion.  Print the '%' and back up. */
         putchar('%');
-        --fmt;
+        fmt = initial;
         break;
       }
     }
