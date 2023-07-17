@@ -32,8 +32,8 @@ struct printer {
     FILE *file;
     char *buf;
   };
-  int total;
-  int max;
+  size_t max;
+  size_t total;
   void (*copy)(struct printer *p, const char *s, size_t length);
   void (*fill)(struct printer *p, char c, size_t length);
   void (*putc)(struct printer *p, char c);
@@ -235,6 +235,7 @@ static unsigned long long get_unsigned_integer(va_list *args, int size) {
  *      -- Unsigned decimal: "u"
  *      -- Octal: "o"
  *      -- Hexadecimal: "x", "X"
+ *  -- Pointers: "p".
  *  -- Flags:
  *      -- "#" for alternate form on "o", "x", and "X" conversions.
  *      -- " " and "+" for sign on "d", "i" conversions.
@@ -251,7 +252,6 @@ static unsigned long long get_unsigned_integer(va_list *args, int size) {
  *  -- Reporting length of printed string with "n".
  *  -- Printing to a stream other than stdout.
  *  -- Printing to a buffer.
- *  -- Converting pointers with "p".
  *
  * I guess it's no longer so simple...
  */
@@ -459,6 +459,19 @@ static void printf_core(struct printer *p, const char *fmt, va_list args) {
         break;
       }
 
+      case 'p': {
+        /* Print pointers like %#x with an appropriate length modifier. */
+        void *ptr = va_arg(args, void *);
+        unsigned long long val = (uintptr_t)ptr;
+
+        int idx = conv_integer(val, false, false, false, true, 1, false,
+                               16, buf);
+
+        int len = INT_BUF_SIZE - idx - 1;
+        print_string(p, buf + idx, len, width, left_justify);
+        break;
+      }
+
       case '%': {
         /* %% prints '%' */
         p->putc(p, '%');
@@ -528,6 +541,69 @@ int simple_printf(const char *fmt, ...) {
   return p.total;
 }
 
+
+/* Copies a string to a buffer */
+static void printer_buf_copy(struct printer *p, const char *s, size_t len) {
+  if (p->total >= p->max) {
+    p->total += len;
+    return;
+  }
+
+  size_t avail = p->max - p->total;
+  char *target = p->buf + p->total;
+  p->total += len;
+
+  if (len > avail) { len = avail; }  /* Limit our output to what's allowed. */
+  memcpy(target, s, len);
+}
+
+/* Fills a block of output with a character. */
+static void printer_buf_fill(struct printer *p, char c, size_t len) {
+  if (p->total >= p->max) {
+    p->total += len;
+    return;
+  }
+
+  size_t avail = p->max - p->total;
+  char *target = p->buf + p->total;
+  p->total += len;
+
+  if (len > avail) { len = avail; }  /* Limit our output to what's allowed. */
+  memset(target, c, len);
+}
+
+/* Copies a character to a buffer */
+static void printer_buf_putc(struct printer *p, char c) {
+  if (p->total >= p->max) {
+    p->total++;
+    return;
+  }
+
+  p->buf[p->total++] = c;
+}
+
+/* Wrapper around printf_core for printing to a buffer. */
+int simple_snprintf(char *buf, size_t max, const char *fmt, ...) {
+  struct printer p = {
+    .buf = buf,
+    .max = max > 0 ? max - 1 : 0,  /* Save room for null! */
+    .total = 0,
+    .copy = printer_buf_copy,
+    .fill = printer_buf_fill,
+    .putc = printer_buf_putc
+  };
+
+  va_list args;
+  va_start(args, fmt);
+  printf_core(&p, fmt, args);
+  va_end(args);
+
+  /* Null terminate result. */
+  size_t end = p.total < p.max ? p.total : p.max;
+  p.buf[end] = '\0';
+
+  return p.total;  /* Total converted characters, possibly more than max. */
+}
 
 int main() {
   simple_printf("Hello %s, the answer is %d.\n", "world", 42);
@@ -714,4 +790,15 @@ int main() {
   simple_printf("Zero width zeros should print something: "
                 "[%%*d%%*i%%*u%%*o%%*x%%*X] -> \[%*d%*i%*u%*o%*x%*X]\n",
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+
+  int x;
+  simple_printf("Pointer: (void *)&x = %p\n", (void *)&x);
+
+  simple_printf("\nsimple_snprintf with various size buffers:\n");
+  for (int i = 0; i <= 50; i += 5) {
+    char buf[50];
+    x = simple_snprintf(buf, i, "This is a test: %.16llX%.16llX", 
+                        0xDEADBEEFDEADBEEFULL, 0xABCDABCDABCDABCDULL);
+    simple_printf("x=%d, buf=[%s]\n", x, buf);
+  }
 }
