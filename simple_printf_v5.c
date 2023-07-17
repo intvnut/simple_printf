@@ -183,7 +183,7 @@ static unsigned long long get_signed_integer(va_list *args, int size) {
   return va_arg(*args, int);
 }
 
-/* Gets a signed argument of the specified size. */
+/* Gets an unsigned argument of the specified size. */
 static unsigned long long get_unsigned_integer(va_list *args, int size) {
   switch (size) {
     case kSizeChar:     { return (unsigned char)va_arg(*args, int); }
