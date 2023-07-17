@@ -504,9 +504,9 @@ static void printf_core(struct printer *p, const char *fmt, va_list args) {
 
         if (default_prec) {
           /*
-           * If provided an explicit width but no precision, and asked to zero
-           * pad treat the width like a "soft" precision that can be eaten into
-           * by the sign and a radix prefix if needed.
+           * If provided an explicit width but no precision and asked to zero
+           * pad, treat the width like a "soft" precision that can be eaten
+           * into by the sign and a radix prefix if needed.
            */
           if (leading_zero && !default_width && !left_justify) {
             prec = width;
@@ -563,7 +563,7 @@ static void printf_core(struct printer *p, const char *fmt, va_list args) {
 }
 
 
-/* Copies string to a file. */
+/* Copies a string to a file. */
 static void printer_file_copy(struct printer *p, const char *s, size_t len) {
   p->total += len;
   fwrite(s, 1, len, p->file);

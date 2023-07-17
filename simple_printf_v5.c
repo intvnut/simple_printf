@@ -421,9 +421,9 @@ void simple_printf(const char *fmt, ...) {
 
         if (default_prec) {
           /*
-           * If provided an explicit width but no precision, and asked to zero
-           * pad treat the width like a "soft" precision that can be eaten into
-           * by the sign and a radix prefix if needed.
+           * If provided an explicit width but no precision and asked to zero
+           * pad, treat the width like a "soft" precision that can be eaten
+           * into by the sign and a radix prefix if needed.
            */
           if (leading_zero && !default_width && !left_justify) {
             prec = width;
