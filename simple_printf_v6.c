@@ -100,8 +100,8 @@ static int conv_integer(
 
   buf[--idx] = '\0';
 
-  /* Print nothing if precision and value are both 0. */
-  if (!soft_prec && prec == 0 && value == 0) {
+  /* Print nothing if precision and value are both 0, and not alternate. */
+  if (!soft_prec && prec == 0 && value == 0 && !is_alt) {
     return INT_BUF_SIZE - 1;
   }
 
