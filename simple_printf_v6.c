@@ -535,14 +535,14 @@ static void printer_file_copy(struct printer *p, const char *s, size_t len) {
 
 /* Writes a block of fill characters to a file. */
 static void printer_file_fill(struct printer *p, char c, size_t len) {
-  char buf[16];
-  memset(buf, c, len);
+  char buf[32];
+  memset(buf, c, sizeof(buf));
 
   p->total += len;
 
-  while (len > 16) {
-    fwrite(buf, 1, 16, p->file);
-    len -= 16;
+  while (len >= sizeof(buf)) {
+    fwrite(buf, 1, sizeof(buf), p->file);
+    len -= sizeof(buf);
   }
 
   if (len > 0) {
