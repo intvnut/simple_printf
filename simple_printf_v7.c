@@ -74,10 +74,11 @@ struct printer {
   void (*copy)(struct printer *p, const char *first, const char *last);
   void (*fill)(struct printer *p, char c, size_t length);
   void (*putc)(struct printer *p, char c);
+  void (*done)(struct printer *p);
 };
 
 /*
- * Conversion spec.  This is designed so that a default of all-zeros / false 
+ * Conversion spec.  This is designed so that a default of all-zeros / false
  * gives the desired result.
  */
 struct conv {
@@ -95,14 +96,14 @@ struct conv {
   bool          is_signed;           /* Perform a signed integer conversion. */
   unsigned char base;                /* Default radix is decimal.            */
   char          type;                /* Actual conversion to perform.        */
-  
+
   /* Additional details for handling the conversion. */
   va_list        *restrict args;     /* Argument list.                       */
   struct printer *restrict printer;  /* Where to send output.                */
 };
 
 
-/* Forward declarations for parsing functions. */
+/* Forward declarations for conversion spec parsing functions. */
 static const char *parse_flags (const char *fmt, struct conv *restrict conv);
 static const char *parse_width (const char *fmt, struct conv *restrict conv);
 static const char *parse_prec  (const char *fmt, struct conv *restrict conv);
@@ -126,8 +127,9 @@ static bool print_converted_string(struct conv *restrict conv,
                                    const char *restrict str, int str_len);
 
 
-/*
+/*******************************************************************************
  * Implements simplified printf that understands:
+ *
  *  -- Strings: "s"
  *  -- Characters: "c"
  *  -- Integers:
@@ -157,8 +159,9 @@ static bool print_converted_string(struct conv *restrict conv,
  *  -- Wide character strings ("%ls").
  *
  * I guess it's no longer so simple...
- */
-static void printf_core(struct printer *p, const char *fmt, va_list args) {
+ *
+ ******************************************************************************/
+static size_t printf_core(struct printer *p, const char *fmt, va_list args) {
   const char *curr_fmt = fmt;
   const char *prev_fmt = fmt;                 /* Previous format pointer. */
   const char *term_fmt = fmt + strlen(fmt);   /* Null terminator in format. */
@@ -191,8 +194,13 @@ static void printf_core(struct printer *p, const char *fmt, va_list args) {
 
   /* Print the tail. */
   if (prev_fmt != term_fmt) { p->copy(p, prev_fmt, term_fmt); }
+
+  return p->total;
 }
 
+/*******************************************************************************
+ * Conversion specficatin parsing
+ ******************************************************************************/
 
 /* Parses any flags that are present.  They can appear in any order. */
 static const char *parse_flags(const char *fmt, struct conv *restrict conv) {
@@ -296,6 +304,11 @@ static const char *parse_length(const char *fmt, struct conv *restrict conv) {
   return fmt;
 }
 
+
+/*******************************************************************************
+ * Format conversions
+ ******************************************************************************/
+
 /* Dispatches to appropriate conversion and prints. Returns true on success. */
 static bool print_conversion(struct conv *restrict conv) {
   /* Now look for the actual conversion. */
@@ -377,9 +390,6 @@ static bool print_diouxXp_conversions(struct conv *restrict conv) {
   return print_converted_string(conv, buf + idx, str_len);
 }
 
-
-
-
 /* Stores the current character count to the appropriate sort of pointer. */
 static bool store_character_count(struct conv *restrict conv) {
   const uintmax_t t = conv->printer->total;
@@ -400,6 +410,11 @@ static bool store_character_count(struct conv *restrict conv) {
 
   return true;
 }
+
+
+/*******************************************************************************
+ * Integer argument fetchers
+ ******************************************************************************/
 
 /* Gets a signed argument of the specified size. */
 static uintmax_t get_signed_integer(struct conv *restrict conv) {
@@ -435,6 +450,9 @@ static uintmax_t get_unsigned_integer(struct conv *restrict conv) {
   }
 }
 
+/*******************************************************************************
+ * Utility Functions: Integer and string conversion implementation.
+ ******************************************************************************/
 
 /* Assume MSB is sign bit. */
 #define SIGN_BIT (ULLONG_MAX - ULLONG_MAX / 2)
@@ -464,7 +482,7 @@ static int convert_integer_to_string(
   if (conv->is_signed) {
     if      (value & SIGN_BIT)          { sign_char = '-'; value = -value; }
     else if (conv->sign == kSignAlways) { sign_char = '+';                 }
-    else if (conv->sign == kSignSpace)  { sign_char = ' ';                 } 
+    else if (conv->sign == kSignSpace)  { sign_char = ' ';                 }
   }
 
   /* Convert the digits, starting with the least significant. */
@@ -532,10 +550,15 @@ static bool print_converted_string(struct conv *restrict conv,
 }
 
 
-
-
-
-
+/*******************************************************************************
+ * Printers for writing to a FILE *:
+ *
+ *  -- printer_file_copy(struct printer *p, const char *s, const char *e)
+ *  -- printer_file_fill(struct printer *p, const char *s, size_t len)
+ *  -- printer_file_putc(struct printer *p, const char c)
+ *  -- printer_file_done(struct printer *p):  No-op.
+ *
+ ******************************************************************************/
 
 /* Copies a string to a file. */
 static void printer_file_copy(struct printer *p, const char *s, const char *e) {
@@ -567,24 +590,18 @@ static void printer_file_putc(struct printer *p, char c) {
   fputc(c, p->file);
 }
 
-/* Wrapper around printf_core for printing to stdout. */
-int simple_printf(const char *fmt, ...) {
-  struct printer p = {
-    .file = stdout,
-    .total = 0,
-    .copy = printer_file_copy,
-    .fill = printer_file_fill,
-    .putc = printer_file_putc
-  };
+/* Does nothing. */
+static void printer_file_done(struct printer *p) { (void)p; }
 
-  va_list args;
-  va_start(args, fmt);
-  printf_core(&p, fmt, args);
-  va_end(args);
-
-  return p.total;
-}
-
+/*******************************************************************************
+ * Printers for writing to a buffer in memory:
+ *
+ *  -- printer_buf_copy(struct printer *p, const char *s, const char *e)
+ *  -- printer_buf_fill(struct printer *p, const char *s, size_t len)
+ *  -- printer_buf_putc(struct printer *p, const char c)
+ *  -- printer_buf_done(struct printer *p):  null-terminate.
+ *
+ ******************************************************************************/
 
 /* Copies a string to a buffer. */
 static void printer_buf_copy(struct printer *p, const char *s, const char *e) {
@@ -628,28 +645,114 @@ static void printer_buf_putc(struct printer *p, char c) {
   p->buf[p->total++] = c;
 }
 
-/* Wrapper around printf_core for printing to a buffer. */
-int simple_snprintf(char *buf, size_t max, const char *fmt, ...) {
-  struct printer p = {
+/* Null-terminates the output buffer. */
+static void printer_buf_none(struct printer *p) {
+  size_t end = p->total < p->max ? p->total : p->max;
+  p->buf[end] = '\0';
+}
+  
+
+/*******************************************************************************
+ * Wrappers around printf_core for printing to a FILE* or stdout, either with
+ * a va_list or a variadic argument list:
+ *
+ *  -- simple_vfprintf(FILE *file, const char *fmt, va_list args)
+ *  -- simple_fprintf (FILE *file, const char *fmt, ...)
+ *  -- simple_vprintf (const char *fmt, va_list args)
+ *  -- simple_printf  (const char *fmt, ...)
+ *
+ ******************************************************************************/
+
+/* Prints to a FILE*, accepting arguments from va_list. */
+int simple_vfprintf(FILE *file, const char *fmt, va_list args) {
+  struct printer printer = {
+    .file = file,
+    .total = 0,
+    .copy = printer_file_copy,
+    .fill = printer_file_fill,
+    .putc = printer_file_putc,
+    .done = printer_file_done
+  };
+
+  return printf_core(&printer, fmt, args);
+}
+
+/* Prints to stdout, accepting arguments from va_list. */
+int simple_vprintf(const char *fmt, va_list args) {
+  return simple_vfprintf(stdout, fmt, args);
+}
+
+/* Prints to a FILE*, accepting a variadic argument list. */
+int simple_fprintf(FILE *file, const char *fmt, ...) {
+  va_list args;
+  va_start(args, fmt);
+  int ret = simple_vfprintf(file, fmt, args);
+  va_end(args);
+
+  return ret;
+}
+
+/* Prints to stdout, accepting a variadic argument list. */
+int simple_printf(const char *fmt, ...) {
+  va_list args;
+  va_start(args, fmt);
+  int ret = simple_vfprintf(stdout, fmt, args);
+  va_end(args);
+
+  return ret;
+}
+
+/*******************************************************************************
+ * Wrappers around printf_core for printing to a buffer of known or unknown 
+ * size, either with a va_list or a variadic argument list:
+ *
+ *  -- simple_vsnprintf(char *buf, size_t max, const char *fmt, va_list args)
+ *  -- simple_snprintf (char *buf, size_t max, const char *fmt, ...)
+ *  -- simple_vsprintf (char *buf, const char *fmt, va_list args)
+ *  -- simple_sprintf  (char *buf, const char *fmt, ...)
+ *
+ ******************************************************************************/
+
+/* Prints up to max chars in a buffer, accepting arguments from va_list. */
+int simple_vsnprintf(char *buf, size_t max, const char *fmt, va_list args) {
+  struct printer printer = {
     .buf = buf,
     .max = max > 0 ? max - 1 : 0,  /* Save room for null! */
     .total = 0,
     .copy = printer_buf_copy,
     .fill = printer_buf_fill,
-    .putc = printer_buf_putc
+    .putc = printer_buf_putc,
+    .done = printer_buf_done
   };
 
+  ret printf_core(&printer, fmt, args);
+}
+
+/* Prints up to max chars in a buffer, accepting a variadic argument list. */
+int simple_snprintf(char *buf, size_t max, const char *fmt, ...) {
   va_list args;
   va_start(args, fmt);
-  printf_core(&p, fmt, args);
+  int ret = simple_vsnprintf(buf, max, fmt, args);
   va_end(args);
 
-  /* Null terminate result. */
-  size_t end = p.total < p.max ? p.total : p.max;
-  p.buf[end] = '\0';
-
-  return p.total;  /* Total converted characters, possibly more than max. */
+  return ret;  /* Total converted characters, possibly more than max. */
 }
+
+/* Prints unbounded chars in a buffer, accepting arguments from va_list. */
+int simple_vsprintf(char *buf, const char *fmt, va_list args) {
+  return simple_vsnprintF(buf, SIZE_MAX, fmt, args);  /* UNSAFE! */
+}
+
+/* Prints unbounded chars in a buffer, accepting a variadic argument list. */
+int simple_sprintf(char *buf, size_t max, const char *fmt, ...) {
+  va_list args;
+  va_start(args, fmt);
+  int ret = simple_vsnprintf(buf, SIZE_MAX, fmt, args);  /* UNSAFE! */
+  va_end(args);
+
+  return ret;  /* Total converted characters, possibly more than max. */
+}
+
 
 int main() {
   simple_printf("Hello %s, the answer is %d.\n", "world", 42);
