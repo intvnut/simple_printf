@@ -292,7 +292,7 @@ static const char *parse_prec(const char *fmt, struct conv *restrict conv) {
 }
 
 /*
- * Parses length modifierss "hh", "h", "l", "ll", "j", "z", "t", and peeks
+ * Parses length modifiers "hh", "h", "l", "ll", "j", "z", "t", and peeks
  * ahead for "p" as it has an implicit, fixed size.
  *
  * An invalid conversion such as "%hhp" will behave like "%#hhx".  That's OK,
