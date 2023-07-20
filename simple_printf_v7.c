@@ -199,7 +199,7 @@ static size_t printf_core(struct printer *p, const char *fmt, va_list args) {
 }
 
 /*******************************************************************************
- * Conversion specficatin parsing
+ * Conversion specification parsing
  ******************************************************************************/
 
 /* Parses any flags that are present.  They can appear in any order. */
