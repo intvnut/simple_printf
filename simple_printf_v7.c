@@ -195,6 +195,8 @@ static size_t printf_core(struct printer *p, const char *fmt, va_list args) {
   /* Print the tail. */
   if (prev_fmt != term_fmt) { p->copy(p, prev_fmt, term_fmt); }
 
+  p->done(p);
+
   return p->total;
 }
 
@@ -253,27 +255,24 @@ static const char *parse_width(const char *fmt, struct conv *restrict conv) {
 
 /* Parses the precision specifier, if present. */
 static const char *parse_prec(const char *fmt, struct conv *restrict conv) {
-  char ch = *fmt;
+  if (*fmt != '.') { return fmt; }  /* Precision always preceded by '.'. */
+
+  char ch = *++fmt;
   int prec = 0;
 
-  /* Check for precision. Always preceded by a "." */
-  if (ch == '.') {
-    conv->explicit_prec = true;
-    ch = *++fmt;
+  conv->explicit_prec = true;
 
-    if (ch == '*') {  /* Precision provided as an int argument. */
-      ++fmt;
-      prec = va_arg(*conv->args, int);
-      if (prec < 0) { prec = 0; } /* Negative precision acts like 0. */
-    } else {  /* Precision is a decimal number in the format string. */
-      while (isdigit(ch)) {
-        prec = prec * 10 + (ch - '0');
-        ch = *++fmt;
-      }
+  if (ch == '*') {  /* Precision provided as an int argument. */
+    ++fmt;
+    prec = va_arg(*conv->args, int);
+  } else {  /* Precision is a decimal number in the format string. */
+    while (isdigit(ch)) {
+      prec = prec * 10 + (ch - '0');
+      ch = *++fmt;
     }
   }
 
-  conv->prec = prec;
+  conv->prec = prec < 0 ? 0 : prec; /* Negative precision acts like 0. */
   return fmt;
 }
 
@@ -283,7 +282,7 @@ static const char *parse_prec(const char *fmt, struct conv *restrict conv) {
  */
 static const char *parse_length(const char *fmt, struct conv *restrict conv) {
   int length = kLengthDefault;
-  int ch1 = fmt[0], ch2 = fmt[1];
+  int ch1 = fmt[0], ch2 = ch1 ? fmt[1] : 0;
 
 # define PACK_CHAR_(a, b) (((a) & UCHAR_MAX) | (((a) == (b)) << CHAR_BIT))
 
