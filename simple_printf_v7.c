@@ -1,11 +1,3 @@
-#include <ctype.h>
-#include <limits.h>
-#include <stdarg.h>
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <string.h>
 /*******************************************************************************
  * This file implements a simplified printf that understands:
  *
@@ -44,6 +36,15 @@
  *  Author:  Joe Zbiciak <joe.zbiciak@leftturnonly.info>
  *  SPDX-License-Identifier:  CC-BY-SA-4.0
  ******************************************************************************/
+
+#include <ctype.h>
+#include <limits.h>
+#include <stdarg.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <string.h>
 
 /*
  * Some conversions need the "signed integer type corresponding to size_t."
@@ -95,7 +96,7 @@ enum {                  /* -----  --------------------  -------------------- */
   kSignSpace            /* space  ' '                   '-'                  */
 };
 
-/* Abstracts away how text gets output, and how much was actually output. */
+/* Abstracts text output and accounting for how much text we output. */
 struct printer {
   union {
     FILE *file;
@@ -104,15 +105,23 @@ struct printer {
   size_t max;
   size_t total;
 
+  /* Copies a block of text to the output. */
   void (*copy)(struct printer *p, const char *first, const char *last);
+
+  /* Outputs a run of fill characters. */
   void (*fill)(struct printer *p, char c, size_t length);
+
+  /* Outputs a single character. */
   void (*putc)(struct printer *p, char c);
+
+  /* Ends text output for this printf call. */
   void (*done)(struct printer *p);
 };
 
 /*
  * Conversion spec.  This is designed so that a default of all-zeros / false
- * gives the desired result.
+ * gives the desired result, for the most part.  The printf_core must init
+ * base to 10, as well as args and printer.
  */
 struct conv {
   bool          leading_zero;        /* Leading-zero flag.                   */
@@ -170,10 +179,11 @@ static size_t printf_core(struct printer *p, const char *fmt, va_list args) {
   const char *prev_fmt = fmt;                 /* Previous format pointer. */
   const char *term_fmt = fmt + strlen(fmt);   /* Null terminator in format. */
 
+  /* Output spans of non-conversion chars, interspersed with conversions. */
   for (curr_fmt = memchr(curr_fmt, '%', term_fmt - curr_fmt); curr_fmt;
        prev_fmt = curr_fmt,
        curr_fmt = memchr(curr_fmt, '%', term_fmt - curr_fmt)) {
-    /* Output any batched up non-conversion characters in format. */
+    /* Output spans of non-conversion characters in format. */
     if (prev_fmt != curr_fmt) { p->copy(p, prev_fmt, curr_fmt); }
 
     /* It's (potentially) a conversion. Let's take a look. */
@@ -188,7 +198,7 @@ static size_t printf_core(struct printer *p, const char *fmt, va_list args) {
     curr_fmt = parse_prec  (curr_fmt, &conv);
     curr_fmt = parse_length(curr_fmt, &conv);
 
-    conv.type = *curr_fmt++;
+    conv.type = *curr_fmt++;  /* Get the actual conversion character. */
 
     if (!print_conversion(&conv)) {
       /* Failed conversion. Print failed conversion specifier. */
@@ -246,7 +256,8 @@ static const char *parse_width(const char *fmt, struct conv *restrict conv) {
       width = -width;
     }
   } else {  /* Width is a decimal number in the format string. */
-    conv->explicit_width = isdigit(ch);
+    conv->explicit_width = isdigit(ch);  /* Only true if there's a digit. */
+
     while (isdigit(ch)) {
       width = width * 10 + (ch - '0');
       ch = *++fmt;
@@ -259,7 +270,7 @@ static const char *parse_width(const char *fmt, struct conv *restrict conv) {
 
 /* Parses the precision specifier, if present. */
 static const char *parse_prec(const char *fmt, struct conv *restrict conv) {
-  if (*fmt != '.') { return fmt; }  /* Precision always preceded by '.'. */
+  if (*fmt != '.') { return fmt; }  /* Precision is always preceded by '.'. */
 
   char ch = *++fmt;
   int prec = 0;
@@ -283,6 +294,9 @@ static const char *parse_prec(const char *fmt, struct conv *restrict conv) {
 /*
  * Parses length modifierss "hh", "h", "l", "ll", "j", "z", "t", and peeks
  * ahead for "p" as it has an implicit, fixed size.
+ *
+ * An invalid conversion such as "%hhp" will behave like "%#hhx".  That's OK,
+ * as we're in "undefined behavior" territory.
  */
 static const char *parse_length(const char *fmt, struct conv *restrict conv) {
   int length = kLengthDefault;
@@ -336,7 +350,7 @@ static bool print_char_conversion(struct conv *restrict conv) {
   return print_converted_string(conv, &c, 1);
 }
 
-/* Prints %s conversions. */
+/* Prints %s conversions, truncating the string if needed. */
 static bool print_string_conversion(struct conv *restrict conv) {
   /* For now, we don't support %ls. */
   if (conv->length != kLengthDefault) { return false; }
