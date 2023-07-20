@@ -6,11 +6,44 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
-/*
- * Copyright 2023, J. Zbiciak <joe.zbiciak@leftturnonly.info>
- * Author:  Joe Zbiciak <joe.zbiciak@leftturnonly.info>
- * SPDX-License-Identifier:  CC-BY-SA-4.0
- */
+/*******************************************************************************
+ * This file implements a simplified printf that understands:
+ *
+ *  -- Strings: "s"
+ *  -- Characters: "c"
+ *  -- Integers:
+ *      -- Lengths: "hh", "h", "l", "ll", "j", "z", "t" and default int.
+ *      -- Signed decimal: "d", "i"
+ *      -- Unsigned decimal: "u"
+ *      -- Octal: "o"
+ *      -- Hexadecimal: "x", "X"
+ *  -- Pointers: "p".
+ *  -- Flags:
+ *      -- "#" for alternate form on "o", "x", and "X" conversions.
+ *      -- " " and "+" for sign on "d", "i" conversions.
+ *      -- "0" for leading zeros on integer conversions.
+ *      -- "-" for left-justified fields.
+ *  -- Width and precision specifiers:
+ *      -- Supports dynamic values via "*".
+ *      -- Max integer precision is limited by INT_BUF_MAX.
+ *  -- Printing "%" with "%%".
+ *  -- Reporting length of printed string with "n".
+ *  -- Returning length of printed string.
+ *  -- Printing to a stream other than stdout.
+ *  -- Printing to a buffer.
+ *
+ * Not supported:
+ *  -- Floating point.
+ *  -- Wide characters ("%lc").
+ *  -- Wide character strings ("%ls").
+ *
+ * I guess it's no longer so simple...
+ *
+ * ____________________________________________________________________________
+ *  Copyright © 2023, J. Zbiciak <joe.zbiciak@leftturnonly.info>
+ *  Author:  Joe Zbiciak <joe.zbiciak@leftturnonly.info>
+ *  SPDX-License-Identifier:  CC-BY-SA-4.0
+ ******************************************************************************/
 
 /*
  * Some conversions need the "signed integer type corresponding to size_t."
@@ -128,38 +161,9 @@ static bool print_converted_string(struct conv *restrict conv,
 
 
 /*******************************************************************************
- * Implements simplified printf that understands:
- *
- *  -- Strings: "s"
- *  -- Characters: "c"
- *  -- Integers:
- *      -- Lengths: "hh", "h", "l", "ll", "j", "z", "t" and default int.
- *      -- Signed decimal: "d", "i"
- *      -- Unsigned decimal: "u"
- *      -- Octal: "o"
- *      -- Hexadecimal: "x", "X"
- *  -- Pointers: "p".
- *  -- Flags:
- *      -- "#" for alternate form on "o", "x", and "X" conversions.
- *      -- " " and "+" for sign on "d", "i" conversions.
- *      -- "0" for leading zeros on integer conversions.
- *      -- "-" for left-justified fields.
- *  -- Width and precision specifiers:
- *      -- Supports dynamic values via "*".
- *      -- Max integer precision is limited by INT_BUF_MAX.
- *  -- Printing "%" with "%%".
- *  -- Reporting length of printed string with "n".
- *  -- Returning length of printed string.
- *  -- Printing to a stream other than stdout.
- *  -- Printing to a buffer.
- *
- * Not supported:
- *  -- Floating point.
- *  -- Wide characters ("%lc").
- *  -- Wide character strings ("%ls").
- *
- * I guess it's no longer so simple...
- *
+ * Core printf routine.
+ * 
+ * This implements the outer loop that drives the conversion process.
  ******************************************************************************/
 static size_t printf_core(struct printer *p, const char *fmt, va_list args) {
   const char *curr_fmt = fmt;
