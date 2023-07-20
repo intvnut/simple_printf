@@ -8,15 +8,16 @@ And then I got carried away, adding more functionality.
 
 This directory contains the results.
 
-None of these is a complete implementation of `printf()`, although version 6
-implements most of what C99 specifies.  None of them implements floating point
-conversions.
+None of these is a complete implementation of `printf()`, although versions 6
+onwards implement most of what C99 specifies.  None of them implements floating
+point conversions or wide-character conversions.
 
-From version 6:
+From version 7:
 
 ```
-/*
+/*******************************************************************************
  * Implements simplified printf that understands:
+ *
  *  -- Strings: "s"
  *  -- Characters: "c"
  *  -- Integers:
@@ -46,7 +47,8 @@ From version 6:
  *  -- Wide character strings ("%ls").
  *
  * I guess it's no longer so simple...
- */
+ *
+ ******************************************************************************/
 ```
 
 I've performed some basic testing, but otherwise _caveat emptor._  I wrote
@@ -59,3 +61,4 @@ Enjoy!
 Copyright 2023, Joe Zbiciak <joe.zbiciak@leftturnonly.info>
 SPDX-License-Identifier:  CC-BY-SA-4.0
 ```
+

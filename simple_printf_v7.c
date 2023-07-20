@@ -646,7 +646,7 @@ static void printer_buf_putc(struct printer *p, char c) {
 }
 
 /* Null-terminates the output buffer. */
-static void printer_buf_none(struct printer *p) {
+static void printer_buf_done(struct printer *p) {
   size_t end = p->total < p->max ? p->total : p->max;
   p->buf[end] = '\0';
 }
@@ -725,7 +725,7 @@ int simple_vsnprintf(char *buf, size_t max, const char *fmt, va_list args) {
     .done = printer_buf_done
   };
 
-  ret printf_core(&printer, fmt, args);
+  return printf_core(&printer, fmt, args);
 }
 
 /* Prints up to max chars in a buffer, accepting a variadic argument list. */
@@ -740,7 +740,7 @@ int simple_snprintf(char *buf, size_t max, const char *fmt, ...) {
 
 /* Prints unbounded chars in a buffer, accepting arguments from va_list. */
 int simple_vsprintf(char *buf, const char *fmt, va_list args) {
-  return simple_vsnprintF(buf, SIZE_MAX, fmt, args);  /* UNSAFE! */
+  return simple_vsnprintf(buf, SIZE_MAX, fmt, args);  /* UNSAFE! */
 }
 
 /* Prints unbounded chars in a buffer, accepting a variadic argument list. */
