@@ -71,7 +71,7 @@ struct printer {
   size_t max;
   size_t total;
 
-  void (*copy)(struct printer *p, const char *s, size_t length);
+  void (*copy)(struct printer *p, const char *first, const char *last);
   void (*fill)(struct printer *p, char c, size_t length);
   void (*putc)(struct printer *p, char c);
 };
@@ -167,7 +167,7 @@ static void printf_core(struct printer *p, const char *fmt, va_list args) {
        prev_fmt = curr_fmt,
        curr_fmt = memchr(curr_fmt, '%', term_fmt - curr_fmt)) {
     /* Output any batched up non-conversion characters in format. */
-    if (prev_fmt != curr_fmt) { p->copy(p, prev_fmt, curr_fmt - prev_fmt); }
+    if (prev_fmt != curr_fmt) { p->copy(p, prev_fmt, curr_fmt); }
 
     /* It's (potentially) a conversion. Let's take a look. */
     const char *conv_fmt = curr_fmt++;  /* Point to first char of conversion. */
@@ -185,12 +185,12 @@ static void printf_core(struct printer *p, const char *fmt, va_list args) {
 
     if (!print_conversion(&conv)) {
       /* Failed conversion. Print failed conversion specifier. */
-      p->copy(p, conv_fmt, curr_fmt - conv_fmt);
+      p->copy(p, conv_fmt, curr_fmt);
     }
   }
 
   /* Print the tail. */
-  if (prev_fmt != term_fmt) { p->copy(p, prev_fmt, term_fmt - prev_fmt); }
+  if (prev_fmt != term_fmt) { p->copy(p, prev_fmt, term_fmt); }
 }
 
 
@@ -525,7 +525,7 @@ static bool print_converted_string(struct conv *restrict conv,
   struct printer *restrict p = conv->printer;
 
   if (!conv->left_justify && fill_count) { p->fill(p, ' ', fill_count); }
-  p->copy(p, str, str_len);
+  p->copy(p, str, str + str_len);
   if ( conv->left_justify && fill_count) { p->fill(p, ' ', fill_count); }
 
   return true;
@@ -538,7 +538,8 @@ static bool print_converted_string(struct conv *restrict conv,
 
 
 /* Copies a string to a file. */
-static void printer_file_copy(struct printer *p, const char *s, size_t len) {
+static void printer_file_copy(struct printer *p, const char *s, const char *e) {
+  int len = e - s;
   p->total += len;
   fwrite(s, 1, len, p->file);
 }
@@ -586,7 +587,9 @@ int simple_printf(const char *fmt, ...) {
 
 
 /* Copies a string to a buffer. */
-static void printer_buf_copy(struct printer *p, const char *s, size_t len) {
+static void printer_buf_copy(struct printer *p, const char *s, const char *e) {
+  int len = e - s;
+
   if (p->total >= p->max) {
     p->total += len;
     return;
